@@ -142,4 +142,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## Author
 
-By Mohammad Amin Najafi
+- **Mohammad Amin Najafi** - *Initial work* - [manvfx](https://github.com/manvfx)
