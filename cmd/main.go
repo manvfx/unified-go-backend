@@ -19,6 +19,10 @@ func main() {
 	database.ConnectDB(cfg)
 	defer database.DisconnectDB()
 
+	// Connect to Redis
+	database.ConnectRedis(cfg)
+	defer database.DisconnectRedis()
+
 	router := gin.Default()
 
 	routes.AuthRoutes(router, cfg)

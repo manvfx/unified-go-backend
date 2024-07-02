@@ -5,40 +5,23 @@ import (
 	"net/http"
 	"time"
 	"unified-go-backend/config"
+	"unified-go-backend/database"
 	"unified-go-backend/models"
 	"unified-go-backend/utils"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthController struct {
-	config      *config.Config
-	mongoClient *mongo.Client
-	redisClient *redis.Client
+	config *config.Config
 }
 
 func NewAuthController(cfg *config.Config) *AuthController {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(cfg.MongoURI))
-	if err != nil {
-		utils.Logger.Fatalf("Failed to connect to MongoDB: %v", err)
-	}
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
-		DB:       0,
-	})
-
 	return &AuthController{
-		config:      cfg,
-		mongoClient: client,
-		redisClient: redisClient,
+		config: cfg,
 	}
 }
 
@@ -59,7 +42,7 @@ func (a *AuthController) Register(c *gin.Context) {
 	user.Password = string(hashedPassword)
 	user.Verified = false
 
-	collection := a.mongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("testdb").Collection("users")
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error creating user: %v", err)
@@ -69,7 +52,7 @@ func (a *AuthController) Register(c *gin.Context) {
 
 	// Generate and send verification code
 	verificationCode := utils.GenerateVerificationCode()
-	err = a.redisClient.Set(context.TODO(), user.Email, verificationCode, 10*time.Minute).Err()
+	err = database.RedisClient.Set(context.TODO(), user.Email, verificationCode, 10*time.Minute).Err()
 	if err != nil {
 		utils.Logger.Errorf("Register: Error saving verification code: %v", err)
 		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error saving verification code"))
@@ -99,14 +82,14 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	storedCode, err := a.redisClient.Get(context.TODO(), request.Email).Result()
+	storedCode, err := database.RedisClient.Get(context.TODO(), request.Email).Result()
 	if err != nil || storedCode != request.Code {
 		utils.Logger.Errorf("VerifyEmail: Invalid or expired verification code for email: %s", request.Email)
 		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid or expired verification code"))
 		return
 	}
 
-	collection := a.mongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("testdb").Collection("users")
 	filter := bson.M{"email": request.Email}
 	update := bson.M{
 		"$set": bson.M{
@@ -134,7 +117,7 @@ func (a *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	collection := a.mongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("testdb").Collection("users")
 	var user models.User
 	err := collection.FindOne(context.TODO(), bson.M{"email": reqUser.Email}).Decode(&user)
 	if err != nil {
