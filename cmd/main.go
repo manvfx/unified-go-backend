@@ -9,8 +9,8 @@ import (
 	"unified-go-backend/worker"
 
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 	"golang.org/x/sync/errgroup"
 )
 
