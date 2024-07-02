@@ -26,6 +26,18 @@ func NewAuthController(cfg *config.Config) *AuthController {
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Register a new user with email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User to register"
+// @Success 201 {object} map[string]string "User created successfully. Please check your email for the verification code."
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 409 {object} utils.ErrorResponse "User already exists"
+// @Failure 500 {object} utils.ErrorResponse "Internal server error"
+// @Router /api/v1/register [post]
 func (a *AuthController) Register(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
@@ -87,12 +99,20 @@ func (a *AuthController) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully. Please check your email for the verification code."})
 }
 
+// VerifyEmail godoc
+// @Summary Verify email address
+// @Description Verify a user's email address with a verification code
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body models.VerifyEmailRequest true "Email verification request"
+// @Success 200 {object} map[string]string "Email verified successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 401 {object} utils.ErrorResponse "Invalid or expired verification code"
+// @Failure 500 {object} utils.ErrorResponse "Error updating user verification status"
+// @Router /api/v1/verify-email [post]
 func (a *AuthController) VerifyEmail(c *gin.Context) {
-	var request struct {
-		Email string `json:"email"`
-		Code  string `json:"code"`
-	}
-
+	var request models.VerifyEmailRequest
 	if err := c.BindJSON(&request); err != nil {
 		utils.Logger.Errorf("VerifyEmail: Invalid request: %v", err)
 		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request"))
@@ -137,7 +157,7 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 // @Failure 400 {object} utils.ErrorResponse "Invalid request"
 // @Failure 401 {object} utils.ErrorResponse "Invalid email or password"
 // @Failure 500 {object} utils.ErrorResponse "Internal server error"
-// @Router /login [post]
+// @Router /api/v1/login [post]
 func (a *AuthController) Login(c *gin.Context) {
 	var reqUser models.User
 	if err := c.BindJSON(&reqUser); err != nil {

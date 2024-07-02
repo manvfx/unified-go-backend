@@ -11,8 +11,11 @@ import (
 func UserRoutes(router *gin.Engine, cfg *config.Config) {
 	userController := controllers.NewUserController(cfg)
 
-	auth := router.Group("/user")
-	auth.Use(middleware.AuthMiddleware(cfg))
-	auth.GET("/profile", userController.Profile)
-	auth.PUT("/profile", userController.UpdateProfile)
+	v1 := router.Group("/api/v1")
+	v1.Use(middleware.AuthMiddleware(cfg))
+	{
+		v1.GET("/user/profile", userController.Profile)
+		v1.PUT("/user/profile", userController.UpdateProfile)
+		v1.GET("/users", userController.ListUsers)
+	}
 }

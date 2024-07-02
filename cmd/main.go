@@ -58,7 +58,7 @@ func main() {
 	rateLimiter := middleware.NewRateLimiter()
 	router.Use(middleware.RateLimiterMiddleware(rateLimiter))
 
-	routes.AuthRoutes(router, cfg)
+	// Setup routes with versioning
 	routes.UserRoutes(router, cfg)
 
 	// Serve Swagger documentation
