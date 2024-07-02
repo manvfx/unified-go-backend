@@ -24,15 +24,6 @@ func NewUserController(cfg *config.Config) *UserController {
 	}
 }
 
-// Profile godoc
-// @Summary Get user profile
-// @Description Get the authenticated user's profile
-// @Tags user
-// @Produce json
-// @Success 200 {object} models.User
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /user/profile [get]
-// @Security BearerAuth
 func (u *UserController) Profile(c *gin.Context) {
 	email := c.MustGet("email").(string)
 
@@ -49,18 +40,6 @@ func (u *UserController) Profile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// UpdateProfile godoc
-// @Summary Update user profile
-// @Description Update the authenticated user's profile
-// @Tags user
-// @Accept json
-// @Produce json
-// @Param user body models.User true "User profile data"
-// @Success 200 {object} gin.H{"message": string}
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /user/profile [put]
-// @Security BearerAuth
 func (u *UserController) UpdateProfile(c *gin.Context) {
 	email := c.MustGet("email").(string)
 

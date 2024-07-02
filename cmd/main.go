@@ -4,22 +4,23 @@ import (
 	"context"
 	"unified-go-backend/config"
 	"unified-go-backend/database"
+	_ "unified-go-backend/docs"
 	"unified-go-backend/routes"
 	"unified-go-backend/utils"
 	"unified-go-backend/worker"
 
 	"github.com/gin-gonic/gin"
-	"github.com/swaggo/files"
-	"github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"golang.org/x/sync/errgroup"
 )
 
-// @title Go REST API
+// @title Unified Go Backend
 // @version 1.0
-// @description This is a sample server for a Go REST API.
+// @description This is a sample server for a Unified Go Backend.
 // @termsOfService http://swagger.io/terms/
 // @contact.name API Support
-// @contact.email you@example.com
+// @contact.email manvfx@gmail.com
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
