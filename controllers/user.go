@@ -25,19 +25,24 @@ func NewUserController(cfg *config.Config) *UserController {
 }
 
 func (u *UserController) Profile(c *gin.Context) {
-	email := c.MustGet("email").(string)
+	email, exists := c.Get("email")
+	if !exists {
+		utils.Logger.Errorf("Profile: Failed to get email from context")
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Unauthorized"))
+		return
+	}
 
-	collection := database.MongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
 	var user models.User
 	err := collection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 	if err != nil {
 		utils.Logger.Errorf("Profile: Error fetching user profile for email: %s, error: %v", email, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching user profile"})
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error fetching user profile"))
 		return
 	}
 
 	utils.Logger.Infof("Fetched user profile for email: %s", email)
-	c.JSON(http.StatusOK, gin.H{"user": user})
+	c.JSON(http.StatusOK, user)
 }
 
 func (u *UserController) UpdateProfile(c *gin.Context) {
@@ -50,7 +55,7 @@ func (u *UserController) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	collection := database.MongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
 	update := bson.M{
 		"$set": bson.M{
 			"username": userUpdate.Username,

@@ -41,8 +41,8 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Set username in Gin context
-		username := claims["username"].(string) // Assuming "username" is a claim in your JWT
-		c.Set("username", username)
+		email := claims["email"].(string) // Assuming "username" is a claim in your JWT
+		c.Set("email", email)
 
 		c.Next()
 	}

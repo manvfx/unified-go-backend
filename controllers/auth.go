@@ -12,6 +12,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,6 +34,22 @@ func (a *AuthController) Register(c *gin.Context) {
 		return
 	}
 
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
+
+	// Check for duplicate user
+	var existingUser models.User
+	err := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	if err == nil {
+		utils.Logger.Errorf("Register: User already exists with email: %s", user.Email)
+		c.JSON(http.StatusConflict, utils.CreateErrorResponse("User already exists"))
+		return
+	}
+	if err != mongo.ErrNoDocuments {
+		utils.Logger.Errorf("Register: Error checking for duplicate user: %v", err)
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error checking for duplicate user"))
+		return
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error hashing password: %v", err)
@@ -42,7 +59,6 @@ func (a *AuthController) Register(c *gin.Context) {
 	user.Password = string(hashedPassword)
 	user.Verified = false
 
-	collection := database.MongoClient.Database("testdb").Collection("users")
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error creating user: %v", err)
@@ -90,7 +106,7 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	collection := database.MongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
 	filter := bson.M{"email": request.Email}
 	update := bson.M{
 		"$set": bson.M{
@@ -117,7 +133,7 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body models.User true "User credentials"
-// @Success 200 {object} gin.H{"token":string} "Returns a token on successful login"
+// @Success 200 {object} models.LoginResponse "Returns a token on successful login"
 // @Failure 400 {object} utils.ErrorResponse "Invalid request"
 // @Failure 401 {object} utils.ErrorResponse "Invalid email or password"
 // @Failure 500 {object} utils.ErrorResponse "Internal server error"
@@ -130,7 +146,7 @@ func (a *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	collection := database.MongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
 	var user models.User
 	err := collection.FindOne(context.TODO(), bson.M{"email": reqUser.Email}).Decode(&user)
 	if err != nil {
@@ -188,5 +204,5 @@ func (a *AuthController) Login(c *gin.Context) {
 	}
 
 	utils.Logger.Infof("User logged in successfully: %s", user.Email)
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	c.JSON(http.StatusOK, models.LoginResponse{Token: tokenString})
 }

@@ -1,4 +1,36 @@
 basePath: /
+definitions:
+  models.LoginResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      lastLogin:
+        type: string
+      lastLoginAgent:
+        type: string
+      lastLoginIP:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+      verified:
+        type: boolean
+      verifiedAt:
+        type: string
+    type: object
+  utils.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -11,7 +43,41 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Unified Go Backend
   version: "1.0"
-paths: {}
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user with email and password
+      parameters:
+      - description: User credentials
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Returns a token on successful login
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Invalid email or password
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Login a user
+      tags:
+      - auth
 securityDefinitions:
   BearerAuth:
     in: header
