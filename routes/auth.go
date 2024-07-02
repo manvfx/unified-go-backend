@@ -11,4 +11,5 @@ func AuthRoutes(router *gin.Engine, cfg *config.Config) {
 	authController := controllers.NewAuthController(cfg)
 	router.POST("/register", authController.Register)
 	router.POST("/login", authController.Login)
+	router.POST("/verify-email", authController.VerifyEmail)
 }

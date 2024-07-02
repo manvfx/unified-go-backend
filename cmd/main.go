@@ -2,7 +2,9 @@ package main
 
 import (
 	"unified-go-backend/config"
+	"unified-go-backend/database"
 	"unified-go-backend/routes"
+	"unified-go-backend/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,10 +12,21 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
+	// Initialize logger with Elasticsearch URL
+	utils.InitLogger()
+
+	// Connect to the database
+	database.ConnectDB(cfg)
+	defer database.DisconnectDB()
+
 	router := gin.Default()
 
 	routes.AuthRoutes(router, cfg)
 	routes.UserRoutes(router, cfg)
 
-	router.Run()
+	utils.Logger.Info("Starting server...")
+
+	if err := router.Run(); err != nil {
+		utils.Logger.Fatalf("Failed to run server: %v", err)
+	}
 }

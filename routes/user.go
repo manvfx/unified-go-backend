@@ -14,4 +14,5 @@ func UserRoutes(router *gin.Engine, cfg *config.Config) {
 	auth := router.Group("/user")
 	auth.Use(middleware.AuthMiddleware(cfg))
 	auth.GET("/profile", userController.Profile)
+	auth.PUT("/profile", userController.UpdateProfile)
 }
