@@ -1,4 +1,4 @@
-# Go REST API
+# Unified Go Backend
 
 This is a REST API built with Go, Gin, MongoDB, Redis, and Swagger for API documentation. The API includes user registration, email verification, user login, and profile management functionalities.
 
