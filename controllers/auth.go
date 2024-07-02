@@ -50,7 +50,7 @@ func (a *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// Generate and send verification code
+	// Generate and save verification code
 	verificationCode := utils.GenerateVerificationCode()
 	err = database.RedisClient.Set(context.TODO(), user.Email, verificationCode, 10*time.Minute).Err()
 	if err != nil {
@@ -59,10 +59,11 @@ func (a *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	err = utils.SendVerificationEmail(user.Email, verificationCode, a.config.SMTPHost, a.config.SMTPPort, a.config.SMTPUser, a.config.SMTPPassword)
+	// Add email to the verification queue
+	err = database.RedisClient.LPush(context.TODO(), "email_verification_queue", user.Email).Err()
 	if err != nil {
-		utils.Logger.Errorf("Register: Error sending verification email: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error sending verification email"))
+		utils.Logger.Errorf("Register: Error adding email to verification queue: %v", err)
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error adding email to verification queue"))
 		return
 	}
 
