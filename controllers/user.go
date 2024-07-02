@@ -4,36 +4,39 @@ import (
 	"context"
 	"net/http"
 	"unified-go-backend/config"
+	"unified-go-backend/database"
 	"unified-go-backend/models"
 	"unified-go-backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// UserController handles user-related operations.
 type UserController struct {
-	config      *config.Config
-	mongoClient *mongo.Client
+	config *config.Config
 }
 
+// NewUserController creates a new UserController.
 func NewUserController(cfg *config.Config) *UserController {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(cfg.MongoURI))
-	if err != nil {
-		utils.Logger.Fatalf("Failed to connect to MongoDB: %v", err)
-	}
-
 	return &UserController{
-		config:      cfg,
-		mongoClient: client,
+		config: cfg,
 	}
 }
 
+// Profile godoc
+// @Summary Get user profile
+// @Description Get the authenticated user's profile
+// @Tags user
+// @Produce json
+// @Success 200 {object} models.User
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /user/profile [get]
+// @Security BearerAuth
 func (u *UserController) Profile(c *gin.Context) {
 	email := c.MustGet("email").(string)
 
-	collection := u.mongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("testdb").Collection("users")
 	var user models.User
 	err := collection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 	if err != nil {
@@ -46,6 +49,18 @@ func (u *UserController) Profile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
+// UpdateProfile godoc
+// @Summary Update user profile
+// @Description Update the authenticated user's profile
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User profile data"
+// @Success 200 {object} gin.H{"message": string}
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /user/profile [put]
+// @Security BearerAuth
 func (u *UserController) UpdateProfile(c *gin.Context) {
 	email := c.MustGet("email").(string)
 
@@ -56,7 +71,7 @@ func (u *UserController) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	collection := u.mongoClient.Database("testdb").Collection("users")
+	collection := database.MongoClient.Database("testdb").Collection("users")
 	update := bson.M{
 		"$set": bson.M{
 			"username": userUpdate.Username,

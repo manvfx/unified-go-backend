@@ -25,6 +25,17 @@ func NewAuthController(cfg *config.Config) *AuthController {
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Register a new user with username, email, and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User to register"
+// @Success 201 {object} gin.H{"message": string}
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /register [post]
 func (a *AuthController) Register(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
@@ -71,6 +82,18 @@ func (a *AuthController) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully. Please check your email for the verification code."})
 }
 
+// VerifyEmail godoc
+// @Summary Verify a user's email
+// @Description Verify a user's email with a verification code
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param email body models.EmailVerification true "Email and verification code"
+// @Success 200 {object} gin.H{"message": string}
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /verify-email [post]
 func (a *AuthController) VerifyEmail(c *gin.Context) {
 	var request struct {
 		Email string `json:"email"`
@@ -110,6 +133,18 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email verified successfully"})
 }
 
+// Login godoc
+// @Summary Login a user
+// @Description Login a user with email and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body models.User true "User credentials"
+// @Success 200 {object} gin.H{"token": string}
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /login [post]
 func (a *AuthController) Login(c *gin.Context) {
 	var reqUser models.User
 	if err := c.BindJSON(&reqUser); err != nil {
