@@ -5,6 +5,7 @@ import (
 	"unified-go-backend/config"
 	"unified-go-backend/database"
 	_ "unified-go-backend/docs"
+	"unified-go-backend/middleware"
 	"unified-go-backend/routes"
 	"unified-go-backend/utils"
 	"unified-go-backend/worker"
@@ -52,6 +53,10 @@ func main() {
 	})
 
 	router := gin.Default()
+
+	// Create a new RateLimiter instance and apply the rate limiter middleware globally
+	rateLimiter := middleware.NewRateLimiter()
+	router.Use(middleware.RateLimiterMiddleware(rateLimiter))
 
 	routes.AuthRoutes(router, cfg)
 	routes.UserRoutes(router, cfg)
