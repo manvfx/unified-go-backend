@@ -16,4 +16,5 @@ type User struct {
 	LastLogin      time.Time          `bson:"last_login,omitempty"`
 	LastLoginIP    string             `bson:"last_login_ip,omitempty"`
 	LastLoginAgent string             `bson:"last_login_agent,omitempty"`
+	Roles          []string           `json:"roles"`
 }

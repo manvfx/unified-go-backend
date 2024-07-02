@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -180,4 +181,106 @@ func (u *UserController) ListUsers(c *gin.Context) {
 
 	utils.Logger.Infof("Fetched %d users", len(users))
 	c.JSON(http.StatusOK, utils.CreatePaginatedResponse(users, page, limit, int(totalCount)))
+}
+
+// UpdateUser godoc
+// @Summary Update a user
+// @Description Update a user's details
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param user body models.User true "User details to update"
+// @Success 200 {object} map[string]string "message": "User updated successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 404 {object} utils.ErrorResponse "User not found"
+// @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
+// @Router /api/v1/user/{id} [put]
+// @Security BearerAuth
+func (u *UserController) UpdateUser(c *gin.Context) {
+	id := c.Param("id")
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.Logger.Errorf("UpdateUser: Invalid user ID: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid user ID", nil))
+		return
+	}
+
+	var userUpdate models.User
+	if err := c.BindJSON(&userUpdate); err != nil {
+		utils.Logger.Errorf("UpdateUser: Invalid request: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
+		return
+	}
+
+	// Validate the userUpdate request
+	if err := utils.ValidateStruct(userUpdate); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		utils.Logger.Errorf("UpdateUser: Validation error: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
+		return
+	}
+
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
+	update := bson.M{
+		"$set": bson.M{
+			"username": userUpdate.Username,
+			"password": userUpdate.Password, // This assumes the password is already hashed
+		},
+	}
+
+	filter := bson.M{"_id": objectId}
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		utils.Logger.Errorf("UpdateUser: Error updating user: %v", err)
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user", nil))
+		return
+	}
+	if result.MatchedCount == 0 {
+		utils.Logger.Errorf("UpdateUser: User not found with ID: %s", id)
+		c.JSON(http.StatusNotFound, utils.CreateErrorResponse("User not found", nil))
+		return
+	}
+
+	utils.Logger.Infof("User updated successfully: %s", id)
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+}
+
+// DeleteUser godoc
+// @Summary Delete a user
+// @Description Delete a user by ID
+// @Tags user
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} map[string]string "message": "User deleted successfully"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Failure 404 {object} utils.ErrorResponse "User not found"
+// @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
+// @Router /api/v1/user/{id} [delete]
+// @Security BearerAuth
+func (u *UserController) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		utils.Logger.Errorf("DeleteUser: Invalid user ID: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid user ID", nil))
+		return
+	}
+
+	collection := database.MongoClient.Database("mdmdb").Collection("users")
+	filter := bson.M{"_id": objectId}
+	result, err := collection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		utils.Logger.Errorf("DeleteUser: Error deleting user: %v", err)
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error deleting user", nil))
+		return
+	}
+	if result.DeletedCount == 0 {
+		utils.Logger.Errorf("DeleteUser: User not found with ID: %s", id)
+		c.JSON(http.StatusNotFound, utils.CreateErrorResponse("User not found", nil))
+		return
+	}
+
+	utils.Logger.Infof("User deleted successfully: %s", id)
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
