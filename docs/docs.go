@@ -43,7 +43,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.LoginRequest"
                         }
                     }
                 ],
@@ -101,7 +101,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "User created successfully. Please check your email for the verification code.",
+                        "description": "message\": \"User created successfully. Please check your email for the verification code.",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -110,7 +110,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -196,7 +196,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "User profile updated successfully",
+                        "description": "message\": \"User profile updated successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -298,7 +298,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Email verified successfully",
+                        "description": "message\": \"Email verified successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -307,7 +307,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -329,6 +329,22 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
         "models.LoginResponse": {
             "type": "object",
             "properties": {
@@ -339,6 +355,11 @@ const docTemplate = `{
         },
         "models.User": {
             "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -356,10 +377,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 6
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 3
                 },
                 "verified": {
                     "type": "boolean"
@@ -371,6 +395,10 @@ const docTemplate = `{
         },
         "models.VerifyEmailRequest": {
             "type": "object",
+            "required": [
+                "code",
+                "email"
+            ],
             "properties": {
                 "code": {
                     "type": "string"
@@ -383,6 +411,12 @@ const docTemplate = `{
         "utils.ErrorResponse": {
             "type": "object",
             "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "message": {
                     "type": "string"
                 }

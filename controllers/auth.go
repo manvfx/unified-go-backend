@@ -16,10 +16,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// AuthController handles authentication-related operations.
 type AuthController struct {
 	config *config.Config
 }
 
+// NewAuthController creates a new AuthController.
 func NewAuthController(cfg *config.Config) *AuthController {
 	return &AuthController{
 		config: cfg,
@@ -33,8 +35,8 @@ func NewAuthController(cfg *config.Config) *AuthController {
 // @Accept json
 // @Produce json
 // @Param user body models.User true "User to register"
-// @Success 201 {object} map[string]string "User created successfully. Please check your email for the verification code."
-// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Success 201 {object} map[string]string "message": "User created successfully. Please check your email for the verification code."
+// @Failure 400 {object} utils.ErrorResponse "Validation error"
 // @Failure 409 {object} utils.ErrorResponse "User already exists"
 // @Failure 500 {object} utils.ErrorResponse "Internal server error"
 // @Router /api/v1/register [post]
@@ -42,7 +44,15 @@ func (a *AuthController) Register(c *gin.Context) {
 	var user models.User
 	if err := c.BindJSON(&user); err != nil {
 		utils.Logger.Errorf("Register: Invalid request: %v", err)
-		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request"))
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
+		return
+	}
+
+	// Validate the user request
+	if err := utils.ValidateStruct(user); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		utils.Logger.Errorf("Register: Validation error: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
 		return
 	}
 
@@ -53,19 +63,19 @@ func (a *AuthController) Register(c *gin.Context) {
 	err := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
 	if err == nil {
 		utils.Logger.Errorf("Register: User already exists with email: %s", user.Email)
-		c.JSON(http.StatusConflict, utils.CreateErrorResponse("User already exists"))
+		c.JSON(http.StatusConflict, utils.CreateErrorResponse("User already exists", nil))
 		return
 	}
 	if err != mongo.ErrNoDocuments {
 		utils.Logger.Errorf("Register: Error checking for duplicate user: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error checking for duplicate user"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error checking for duplicate user", nil))
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error hashing password: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error hashing password"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error hashing password", nil))
 		return
 	}
 	user.Password = string(hashedPassword)
@@ -74,7 +84,7 @@ func (a *AuthController) Register(c *gin.Context) {
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error creating user: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error creating user"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error creating user", nil))
 		return
 	}
 
@@ -83,7 +93,7 @@ func (a *AuthController) Register(c *gin.Context) {
 	err = database.RedisClient.Set(context.TODO(), user.Email, verificationCode, 10*time.Minute).Err()
 	if err != nil {
 		utils.Logger.Errorf("Register: Error saving verification code: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error saving verification code"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error saving verification code", nil))
 		return
 	}
 
@@ -91,7 +101,7 @@ func (a *AuthController) Register(c *gin.Context) {
 	err = database.RedisClient.LPush(context.TODO(), "email_verification_queue", user.Email).Err()
 	if err != nil {
 		utils.Logger.Errorf("Register: Error adding email to verification queue: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error adding email to verification queue"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error adding email to verification queue", nil))
 		return
 	}
 
@@ -106,8 +116,8 @@ func (a *AuthController) Register(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body models.VerifyEmailRequest true "Email verification request"
-// @Success 200 {object} map[string]string "Email verified successfully"
-// @Failure 400 {object} utils.ErrorResponse "Invalid request"
+// @Success 200 {object} map[string]string "message": "Email verified successfully"
+// @Failure 400 {object} utils.ErrorResponse "Validation error"
 // @Failure 401 {object} utils.ErrorResponse "Invalid or expired verification code"
 // @Failure 500 {object} utils.ErrorResponse "Error updating user verification status"
 // @Router /api/v1/verify-email [post]
@@ -115,14 +125,22 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 	var request models.VerifyEmailRequest
 	if err := c.BindJSON(&request); err != nil {
 		utils.Logger.Errorf("VerifyEmail: Invalid request: %v", err)
-		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request"))
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
+		return
+	}
+
+	// Validate the request
+	if err := utils.ValidateStruct(request); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		utils.Logger.Errorf("VerifyEmail: Validation error: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
 		return
 	}
 
 	storedCode, err := database.RedisClient.Get(context.TODO(), request.Email).Result()
 	if err != nil || storedCode != request.Code {
 		utils.Logger.Errorf("VerifyEmail: Invalid or expired verification code for email: %s", request.Email)
-		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid or expired verification code"))
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid or expired verification code", nil))
 		return
 	}
 
@@ -138,7 +156,7 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		utils.Logger.Errorf("VerifyEmail: Error updating user verification status: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user verification status"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user verification status", nil))
 		return
 	}
 
@@ -152,65 +170,44 @@ func (a *AuthController) VerifyEmail(c *gin.Context) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param user body models.User true "User credentials"
+// @Param user body models.LoginRequest true "User credentials"
 // @Success 200 {object} models.LoginResponse "Returns a token on successful login"
 // @Failure 400 {object} utils.ErrorResponse "Invalid request"
 // @Failure 401 {object} utils.ErrorResponse "Invalid email or password"
 // @Failure 500 {object} utils.ErrorResponse "Internal server error"
 // @Router /api/v1/login [post]
 func (a *AuthController) Login(c *gin.Context) {
-	var reqUser models.User
-	if err := c.BindJSON(&reqUser); err != nil {
+	var loginRequest models.LoginRequest
+	if err := c.BindJSON(&loginRequest); err != nil {
 		utils.Logger.Errorf("Login: Invalid request: %v", err)
-		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request"))
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
+		return
+	}
+
+	// Validate the login request
+	if err := utils.ValidateStruct(loginRequest); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		utils.Logger.Errorf("Login: Validation error: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
 		return
 	}
 
 	collection := database.MongoClient.Database("mdmdb").Collection("users")
 	var user models.User
-	err := collection.FindOne(context.TODO(), bson.M{"email": reqUser.Email}).Decode(&user)
+	err := collection.FindOne(context.TODO(), bson.M{"email": loginRequest.Email}).Decode(&user)
 	if err != nil {
-		utils.Logger.Errorf("Login: Invalid email or password: %s", reqUser.Email)
-		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid email or password"))
+		utils.Logger.Errorf("Login: Invalid email or password: %s", loginRequest.Email)
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid email or password", nil))
 		return
 	}
 
-	if !user.Verified {
-		utils.Logger.Warnf("Login: Email not verified: %s", reqUser.Email)
-		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Email not verified"))
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
+		utils.Logger.Errorf("Login: Invalid email or password: %s", loginRequest.Email)
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid email or password", nil))
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqUser.Password))
-	if err != nil {
-		utils.Logger.Errorf("Login: Invalid email or password: %s", reqUser.Email)
-		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Invalid email or password"))
-		return
-	}
-
-	// Capture system information
-	userIP := c.ClientIP()
-	userAgent := c.Request.UserAgent()
-	user.LastLogin = time.Now()
-	user.LastLoginIP = userIP
-	user.LastLoginAgent = userAgent
-
-	// Update user login info in the database
-	filter := bson.M{"email": user.Email}
-	update := bson.M{
-		"$set": bson.M{
-			"last_login":       user.LastLogin,
-			"last_login_ip":    user.LastLoginIP,
-			"last_login_agent": user.LastLoginAgent,
-		},
-	}
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
-	if err != nil {
-		utils.Logger.Errorf("Login: Error updating user login info: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user login info"))
-		return
-	}
-
+	// Create JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": user.Email,
 		"exp":   time.Now().Add(time.Hour * 72).Unix(),
@@ -219,7 +216,7 @@ func (a *AuthController) Login(c *gin.Context) {
 	tokenString, err := token.SignedString([]byte(a.config.JwtSecret))
 	if err != nil {
 		utils.Logger.Errorf("Login: Error creating token: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error creating token"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error creating token", nil))
 		return
 	}
 

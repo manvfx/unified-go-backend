@@ -1,5 +1,16 @@
 basePath: /
 definitions:
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
   models.LoginResponse:
     properties:
       token:
@@ -18,13 +29,20 @@ definitions:
       lastLoginIP:
         type: string
       password:
+        minLength: 6
         type: string
       username:
+        maxLength: 32
+        minLength: 3
         type: string
       verified:
         type: boolean
       verifiedAt:
         type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   models.VerifyEmailRequest:
     properties:
@@ -32,9 +50,16 @@ definitions:
         type: string
       email:
         type: string
+    required:
+    - code
+    - email
     type: object
   utils.ErrorResponse:
     properties:
+      errors:
+        additionalProperties:
+          type: string
+        type: object
       message:
         type: string
     type: object
@@ -74,7 +99,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
@@ -113,14 +138,14 @@ paths:
       - application/json
       responses:
         "201":
-          description: User created successfully. Please check your email for the
-            verification code.
+          description: 'message": "User created successfully. Please check your email
+            for the verification code.'
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Invalid request
+          description: Validation error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
         "409":
@@ -172,7 +197,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: User profile updated successfully
+          description: 'message": "User profile updated successfully'
           schema:
             additionalProperties:
               type: string
@@ -240,13 +265,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: Email verified successfully
+          description: 'message": "Email verified successfully'
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Invalid request
+          description: Validation error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
         "401":

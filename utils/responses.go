@@ -4,7 +4,8 @@ import "github.com/gin-gonic/gin"
 
 // ErrorResponse represents the structure of an error response.
 type ErrorResponse struct {
-	Message string `json:"message"`
+	Message string            `json:"message"`
+	Errors  map[string]string `json:"errors,omitempty"`
 }
 
 // PaginatedResponse represents the structure of a paginated response.
@@ -17,9 +18,10 @@ type PaginatedResponse struct {
 }
 
 // CreateErrorResponse creates an error response.
-func CreateErrorResponse(message string) ErrorResponse {
+func CreateErrorResponse(message string, validationErrors map[string]string) ErrorResponse {
 	return ErrorResponse{
 		Message: message,
+		Errors:  validationErrors,
 	}
 }
 
@@ -41,5 +43,5 @@ func CreatePaginatedResponse(data interface{}, page, limit, totalCount int) Pagi
 
 // JSONErrorResponse writes a JSON error response.
 func JSONErrorResponse(c *gin.Context, statusCode int, message string) {
-	c.JSON(statusCode, CreateErrorResponse(message))
+	c.JSON(statusCode, CreateErrorResponse(message, nil))
 }

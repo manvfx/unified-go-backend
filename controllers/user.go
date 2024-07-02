@@ -40,7 +40,7 @@ func (u *UserController) Profile(c *gin.Context) {
 	email, exists := c.Get("email")
 	if !exists {
 		utils.Logger.Errorf("Profile: Failed to get email from context")
-		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Unauthorized"))
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Unauthorized", nil))
 		return
 	}
 
@@ -49,7 +49,7 @@ func (u *UserController) Profile(c *gin.Context) {
 	err := collection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 	if err != nil {
 		utils.Logger.Errorf("Profile: Error fetching user profile for email: %s, error: %v", email, err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error fetching user profile"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error fetching user profile", nil))
 		return
 	}
 
@@ -64,18 +64,31 @@ func (u *UserController) Profile(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user body models.User true "User profile data"
-// @Success 200 {object} map[string]string "User profile updated successfully"
+// @Success 200 {object} map[string]string "message": "User profile updated successfully"
 // @Failure 400 {object} utils.ErrorResponse "Invalid request"
 // @Failure 500 {object} utils.ErrorResponse "Error updating user profile"
 // @Router /api/v1/user/profile [put]
 // @Security BearerAuth
 func (u *UserController) UpdateProfile(c *gin.Context) {
-	email := c.MustGet("email").(string)
+	email, exists := c.Get("email")
+	if !exists {
+		utils.Logger.Errorf("UpdateProfile: Failed to get email from context")
+		c.JSON(http.StatusUnauthorized, utils.CreateErrorResponse("Unauthorized", nil))
+		return
+	}
 
 	var userUpdate models.User
 	if err := c.BindJSON(&userUpdate); err != nil {
 		utils.Logger.Errorf("UpdateProfile: Invalid request for email: %s, error: %v", email, err)
-		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request"))
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
+		return
+	}
+
+	// Validate the userUpdate request
+	if err := utils.ValidateStruct(userUpdate); err != nil {
+		validationErrors := utils.FormatValidationError(err)
+		utils.Logger.Errorf("UpdateProfile: Validation error: %v", err)
+		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
 		return
 	}
 
@@ -91,7 +104,7 @@ func (u *UserController) UpdateProfile(c *gin.Context) {
 	_, err := collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		utils.Logger.Errorf("UpdateProfile: Error updating user profile for email: %s, error: %v", email, err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user profile"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error updating user profile", nil))
 		return
 	}
 
@@ -136,7 +149,7 @@ func (u *UserController) ListUsers(c *gin.Context) {
 	cursor, err := collection.Find(context.TODO(), bson.M{}, findOptions)
 	if err != nil {
 		utils.Logger.Errorf("ListUsers: Error fetching users: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error fetching users"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error fetching users", nil))
 		return
 	}
 	defer cursor.Close(context.TODO())
@@ -145,7 +158,7 @@ func (u *UserController) ListUsers(c *gin.Context) {
 		var user models.User
 		if err := cursor.Decode(&user); err != nil {
 			utils.Logger.Errorf("ListUsers: Error decoding user: %v", err)
-			c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error decoding user"))
+			c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error decoding user", nil))
 			return
 		}
 		users = append(users, user)
@@ -153,7 +166,7 @@ func (u *UserController) ListUsers(c *gin.Context) {
 
 	if err := cursor.Err(); err != nil {
 		utils.Logger.Errorf("ListUsers: Cursor error: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Cursor error"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Cursor error", nil))
 		return
 	}
 
@@ -161,7 +174,7 @@ func (u *UserController) ListUsers(c *gin.Context) {
 	totalCount, err := collection.CountDocuments(context.TODO(), bson.M{})
 	if err != nil {
 		utils.Logger.Errorf("ListUsers: Error counting users: %v", err)
-		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error counting users"))
+		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error counting users", nil))
 		return
 	}
 

@@ -37,7 +37,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.LoginRequest"
                         }
                     }
                 ],
@@ -95,7 +95,7 @@
                 ],
                 "responses": {
                     "201": {
-                        "description": "User created successfully. Please check your email for the verification code.",
+                        "description": "message\": \"User created successfully. Please check your email for the verification code.",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -104,7 +104,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -190,7 +190,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "User profile updated successfully",
+                        "description": "message\": \"User profile updated successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -292,7 +292,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Email verified successfully",
+                        "description": "message\": \"Email verified successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -301,7 +301,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Validation error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -323,6 +323,22 @@
         }
     },
     "definitions": {
+        "models.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
         "models.LoginResponse": {
             "type": "object",
             "properties": {
@@ -333,6 +349,11 @@
         },
         "models.User": {
             "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -350,10 +371,13 @@
                     "type": "string"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 6
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 3
                 },
                 "verified": {
                     "type": "boolean"
@@ -365,6 +389,10 @@
         },
         "models.VerifyEmailRequest": {
             "type": "object",
+            "required": [
+                "code",
+                "email"
+            ],
             "properties": {
                 "code": {
                     "type": "string"
@@ -377,6 +405,12 @@
         "utils.ErrorResponse": {
             "type": "object",
             "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "message": {
                     "type": "string"
                 }
