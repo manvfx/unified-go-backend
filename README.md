@@ -1,145 +1,244 @@
-# Unified Go Backend
+# Unified Go Backend API
 
-This is a REST API built with Go, Gin, MongoDB, Redis, and Swagger for API documentation. The API includes user registration, email verification, user login, and profile management functionalities.
+## Overview
 
-## Table of Contents
-
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Setup](#setup)
-- [Running the Project](#running-the-project)
-- [API Documentation](#api-documentation)
-- [Deployment](#deployment)
-- [Author](#author)
+This is a Go-based backend API that uses MongoDB, Redis, and Elasticsearch. The project includes endpoints for user authentication, profile management, and access control with roles and permissions. 
 
 ## Features
 
-- User Registration with Email Verification
-- User Login with JWT Authentication
-- User Profile Management
-- Email Verification Job Worker
-- Logging with Logrus and Elasticsearch
-- API Documentation with Swagger
+- User registration, login, and email verification
+- JWT-based authentication
+- Role-based access control
+- Redis for caching and storing verification codes
+- Elasticsearch for logging
+- Swagger for API documentation
 
 ## Prerequisites
 
-- Go 1.17 or later
-- MongoDB
-- Redis
-- Docker (optional, for deployment)
+- Docker
+- Docker Compose
 
-## Setup
+## Getting Started
 
-1. **Clone the Repository**
+### Local Development
 
-    ```sh
-    git clone https://github.com/yourusername/go-rest-api.git
-    cd go-rest-api
-    ```
-
-2. **Install Dependencies**
+1. **Clone the repository:**
 
     ```sh
-    go mod tidy
+    git clone https://github.com/yourusername/yourproject.git
+    cd yourproject
     ```
 
-3. **Environment Variables**
+2. **Create a `.env` file:**
 
-    Create a `.env` file in the root directory of the project and add the following environment variables:
+    ```sh
+    touch .env
+    ```
+
+    Add the following environment variables to the `.env` file (update with your actual values):
 
     ```env
-    MONGO_URI=mongodb://localhost:27017
-    JWT_SECRET=your_secret_key
-    REDIS_ADDR=localhost:6379
-    REDIS_PASSWORD=
-    SMTP_HOST=smtp.example.com
+    MONGO_URI=mongodb://mongo:27017/mdmdb
+    REDIS_ADDR=redis:6379
+    SMTP_HOST=smtp.mailtrap.io
     SMTP_PORT=587
-    SMTP_USER=your_email@example.com
-    SMTP_PASSWORD=your_email_password
-    ELASTICSEARCH_URL=http://localhost:9200
+    SMTP_USER=your_mailtrap_user
+    SMTP_PASSWORD=your_mailtrap_password
+    JWT_SECRET=your_jwt_secret
+    ELASTICSEARCH_URL=http://elasticsearch:9200
     ```
 
-4. **Generate Swagger Documentation**
-
-    Install `swag` and generate the Swagger documentation:
+3. **Build and run the Docker containers:**
 
     ```sh
-    go install github.com/swaggo/swag/cmd/swag@latest
-    swag init
+    docker-compose up --build
     ```
 
-## Running the Project
+    This will start the application along with MongoDB, Redis, and Elasticsearch services.
 
-1. **Run the Application**
+4. **Access the application:**
+
+    - API: `http://localhost:8080`
+    - Swagger Documentation: `http://localhost:8080/swagger/index.html`
+
+## Deploying to Ubuntu VPS
+
+### Step 1: Prepare Your Ubuntu VPS
+
+1. **Update the system:**
 
     ```sh
-    go run cmd/main.go
+    sudo apt update && sudo apt upgrade -y
     ```
 
-2. **Access API**
-
-    The API will be available at `http://localhost:8080`.
-
-3. **Access Swagger Documentation**
-
-    Open your browser and navigate to `http://localhost:8080/swagger/index.html` to access the API documentation.
-
-## API Documentation
-
-The API documentation is generated using Swagger. You can access it at `http://localhost:8080/swagger/index.html` once the application is running.
-
-## Deployment
-
-You can deploy the application using Docker. Here are the steps:
-
-1. **Create a Dockerfile**
-
-    Create a `Dockerfile` in the root directory of the project:
-
-    ```dockerfile
-    # Start with a base image containing Go
-    FROM golang:1.17-alpine
-
-    # Set the Current Working Directory inside the container
-    WORKDIR /app
-
-    # Copy go mod and sum files
-    COPY go.mod go.sum ./
-
-    # Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-    RUN go mod download
-
-    # Copy the source from the current directory to the Working Directory inside the container
-    COPY . .
-
-    # Build the Go app
-    RUN go build -o main .
-
-    # Expose port 8080 to the outside world
-    EXPOSE 8080
-
-    # Command to run the executable
-    CMD ["./main"]
-    ```
-
-2. **Build the Docker Image**
+2. **Install required packages:**
 
     ```sh
-    docker build -t go-rest-api .
+    sudo apt install curl git -y
     ```
 
-3. **Run the Docker Container**
+### Step 2: Install Docker
+
+1. **Install Docker:**
 
     ```sh
-    docker run -d -p 8080:8080 --name go-rest-api --env-file .env go-rest-api
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
     ```
 
-    Ensure that MongoDB, Redis, and Elasticsearch are accessible to the container, either by running them as separate containers or ensuring they are accessible on the host network.
+2. **Add user to Docker group:**
 
-## Contributing
+    ```sh
+    sudo usermod -aG docker ${USER}
+    ```
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+    Log out and log back in to apply the group changes.
 
-## Author
+3. **Verify Docker installation:**
 
-- **Mohammad Amin Najafi** - *Initial work* - [manvfx](https://github.com/manvfx)
+    ```sh
+    docker --version
+    ```
+
+### Step 3: Install Docker Compose
+
+1. **Download Docker Compose:**
+
+    ```sh
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    ```
+
+2. **Apply executable permissions:**
+
+    ```sh
+    sudo chmod +x /usr/local/bin/docker-compose
+    ```
+
+3. **Verify Docker Compose installation:**
+
+    ```sh
+    docker-compose --version
+    ```
+
+### Step 4: Prepare Your Project
+
+1. **Clone your project:**
+
+    ```sh
+    git clone https://github.com/manvfx/unified-go-backend.git
+    cd yourproject
+    ```
+
+2. **Create a `.env` file:**
+
+    ```sh
+    nano .env
+    ```
+
+    Add the following environment variables to the `.env` file (update with your actual values):
+
+    ```env
+    MONGO_URI=mongodb://mongo:27017/mdmdb
+    REDIS_ADDR=redis:6379
+    SMTP_HOST=smtp.mailtrap.io
+    SMTP_PORT=587
+    SMTP_USER=your_mailtrap_user
+    SMTP_PASSWORD=your_mailtrap_password
+    JWT_SECRET=your_jwt_secret
+    ELASTICSEARCH_URL=http://elasticsearch:9200
+    ```
+
+### Step 5: Build and Run the Containers
+
+1. **Build and start the containers:**
+
+    ```sh
+    docker-compose up --build -d
+    ```
+
+    The `-d` flag runs the containers in detached mode.
+
+2. **Verify the deployment:**
+
+    ```sh
+    docker-compose ps
+    ```
+
+    Ensure all containers are running. Check the logs if there are any issues:
+
+    ```sh
+    docker-compose logs
+    ```
+
+### Step 6: Access Your Application
+
+Your application should now be running on `http://<your-vps-ip>:8080`. Verify by visiting the URL or using a tool like Postman to test the endpoints.
+
+### Optional: Set Up a Reverse Proxy with Nginx
+
+For production deployment, it's a good practice to use a reverse proxy like Nginx to manage SSL certificates and handle requests.
+
+1. **Install Nginx:**
+
+    ```sh
+    sudo apt install nginx -y
+    ```
+
+2. **Configure Nginx:**
+
+    Create a new Nginx configuration file:
+
+    ```sh
+    sudo nano /etc/nginx/sites-available/unified-go-backend
+    ```
+
+    Add the following configuration (update `server_name` with your domain or VPS IP):
+
+    ```nginx
+    server {
+        listen 80;
+        server_name your_domain_or_ip;
+
+        location / {
+            proxy_pass http://localhost:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+    ```
+
+    Enable the configuration and restart Nginx:
+
+    ```sh
+    sudo ln -s /etc/nginx/sites-available/unified-go-backend /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
+    ```
+
+3. **Optional: Set Up SSL with Let's Encrypt**
+
+    If you have a domain, secure your application with SSL using Let's Encrypt.
+
+    1. **Install Certbot:**
+
+        ```sh
+        sudo apt install certbot python3-certbot-nginx -y
+        ```
+
+    2. **Obtain and install SSL certificate:**
+
+        ```sh
+        sudo certbot --nginx -d your_domain
+        ```
+
+        Follow the prompts to complete the installation. Certbot will automatically configure Nginx to use the SSL certificate.
+
+## Authors
+
+- **Mohammad Amin Najafi** - [manvfx](https://github.com/manvfx)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
