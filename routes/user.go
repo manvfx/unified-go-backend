@@ -16,8 +16,8 @@ func UserRoutes(router *gin.Engine, cfg *config.Config) {
 	{
 		v1.GET("/user/profile", userController.Profile)
 		v1.PUT("/user/profile", userController.UpdateProfile)
-		v1.PUT("/user/:id", userController.UpdateUser)
-		v1.DELETE("/user/:id", userController.DeleteUser)
-		v1.GET("/users", userController.ListUsers)
+		v1.PUT("/user/:id", middleware.AuthorizationMiddleware("update_user"), userController.UpdateUser)
+		v1.DELETE("/user/:id", middleware.AuthorizationMiddleware("delete_user"), userController.DeleteUser)
+		v1.GET("/users", middleware.AuthorizationMiddleware("list_users"), userController.ListUsers)
 	}
 }

@@ -17,4 +17,5 @@ type User struct {
 	LastLoginIP    string             `bson:"last_login_ip,omitempty"`
 	LastLoginAgent string             `bson:"last_login_agent,omitempty"`
 	Roles          []string           `json:"roles"`
+	AccessGroup    string             `json:"access_group"`
 }

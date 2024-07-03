@@ -23,6 +23,209 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/access_groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all access groups",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access_group"
+                ],
+                "summary": "List all access groups",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.AccessGroup"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new access group with roles and permissions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access_group"
+                ],
+                "summary": "Create a new access group",
+                "parameters": [
+                    {
+                        "description": "Access group data",
+                        "name": "access_group",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AccessGroup"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.AccessGroup"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/access_groups/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an access group's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access_group"
+                ],
+                "summary": "Update an access group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Access Group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Access group data",
+                        "name": "access_group",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AccessGroup"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message\": \"Access group updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Access group not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an access group by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "access_group"
+                ],
+                "summary": "Delete an access group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Access Group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message\": \"Access group deleted successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Access group not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/login": {
             "post": {
                 "description": "Login a user with email and password",
@@ -77,7 +280,7 @@ const docTemplate = `{
         },
         "/api/v1/register": {
             "post": {
-                "description": "Register a new user with email and password",
+                "description": "Register a new user with email, username, and password",
                 "consumes": [
                     "application/json"
                 ],
@@ -90,12 +293,12 @@ const docTemplate = `{
                 "summary": "Register a new user",
                 "parameters": [
                     {
-                        "description": "User to register",
-                        "name": "user",
+                        "description": "Register request data",
+                        "name": "register_request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/models.RegisterRequest"
                         }
                     }
                 ],
@@ -110,7 +313,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Validation error",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -449,6 +652,32 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.AccessGroup": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "models.LoginRequest": {
             "type": "object",
             "required": [
@@ -473,6 +702,28 @@ const docTemplate = `{
                 }
             }
         },
+        "models.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 3
+                }
+            }
+        },
         "models.User": {
             "type": "object",
             "required": [
@@ -481,6 +732,9 @@ const docTemplate = `{
                 "username"
             ],
             "properties": {
+                "access_group": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },

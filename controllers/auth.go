@@ -12,6 +12,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,26 +31,26 @@ func NewAuthController(cfg *config.Config) *AuthController {
 
 // Register godoc
 // @Summary Register a new user
-// @Description Register a new user with email and password
+// @Description Register a new user with email, username, and password
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param user body models.User true "User to register"
+// @Param register_request body models.RegisterRequest true "Register request data"
 // @Success 201 {object} map[string]string "message": "User created successfully. Please check your email for the verification code."
-// @Failure 400 {object} utils.ErrorResponse "Validation error"
+// @Failure 400 {object} utils.ErrorResponse "Invalid request"
 // @Failure 409 {object} utils.ErrorResponse "User already exists"
 // @Failure 500 {object} utils.ErrorResponse "Internal server error"
 // @Router /api/v1/register [post]
 func (a *AuthController) Register(c *gin.Context) {
-	var user models.User
-	if err := c.BindJSON(&user); err != nil {
+	var req models.RegisterRequest
+	if err := c.BindJSON(&req); err != nil {
 		utils.Logger.Errorf("Register: Invalid request: %v", err)
 		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Invalid request", nil))
 		return
 	}
 
-	// Validate the user request
-	if err := utils.ValidateStruct(user); err != nil {
+	// Validate the request
+	if err := utils.ValidateStruct(req); err != nil {
 		validationErrors := utils.FormatValidationError(err)
 		utils.Logger.Errorf("Register: Validation error: %v", err)
 		c.JSON(http.StatusBadRequest, utils.CreateErrorResponse("Validation error", validationErrors))
@@ -60,9 +61,9 @@ func (a *AuthController) Register(c *gin.Context) {
 
 	// Check for duplicate user
 	var existingUser models.User
-	err := collection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	err := collection.FindOne(context.TODO(), bson.M{"email": req.Email}).Decode(&existingUser)
 	if err == nil {
-		utils.Logger.Errorf("Register: User already exists with email: %s", user.Email)
+		utils.Logger.Errorf("Register: User already exists with email: %s", req.Email)
 		c.JSON(http.StatusConflict, utils.CreateErrorResponse("User already exists", nil))
 		return
 	}
@@ -72,14 +73,24 @@ func (a *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		utils.Logger.Errorf("Register: Error hashing password: %v", err)
 		c.JSON(http.StatusInternalServerError, utils.CreateErrorResponse("Error hashing password", nil))
 		return
 	}
-	user.Password = string(hashedPassword)
-	user.Verified = false
+
+	// Create the user
+	user := models.User{
+		ID:          primitive.NewObjectID(),
+		Email:       req.Email,
+		Username:    req.Username,
+		Password:    string(hashedPassword),
+		Verified:    false,
+		Roles:       []string{"user"}, // Default role
+		AccessGroup: "user_group",     // Default access group
+	}
 
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {

@@ -1,5 +1,22 @@
 basePath: /
 definitions:
+  models.AccessGroup:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      roles:
+        items:
+          type: string
+        type: array
+    required:
+    - name
+    type: object
   models.LoginRequest:
     properties:
       email:
@@ -16,8 +33,26 @@ definitions:
       token:
         type: string
     type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        maxLength: 32
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
   models.User:
     properties:
+      access_group:
+        type: string
       email:
         type: string
       id:
@@ -92,6 +127,135 @@ info:
   title: Unified Go Backend
   version: "1.0"
 paths:
+  /api/v1/access_groups:
+    get:
+      description: List all access groups
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.AccessGroup'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all access groups
+      tags:
+      - access_group
+    post:
+      consumes:
+      - application/json
+      description: Create a new access group with roles and permissions
+      parameters:
+      - description: Access group data
+        in: body
+        name: access_group
+        required: true
+        schema:
+          $ref: '#/definitions/models.AccessGroup'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AccessGroup'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new access group
+      tags:
+      - access_group
+  /api/v1/access_groups/{id}:
+    delete:
+      description: Delete an access group by ID
+      parameters:
+      - description: Access Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message": "Access group deleted successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Access group not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an access group
+      tags:
+      - access_group
+    put:
+      consumes:
+      - application/json
+      description: Update an access group's details
+      parameters:
+      - description: Access Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Access group data
+        in: body
+        name: access_group
+        required: true
+        schema:
+          $ref: '#/definitions/models.AccessGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message": "Access group updated successfully'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Access group not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an access group
+      tags:
+      - access_group
   /api/v1/login:
     post:
       consumes:
@@ -130,14 +294,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Register a new user with email and password
+      description: Register a new user with email, username, and password
       parameters:
-      - description: User to register
+      - description: Register request data
         in: body
-        name: user
+        name: register_request
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -149,7 +313,7 @@ paths:
               type: string
             type: object
         "400":
-          description: Validation error
+          description: Invalid request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
         "409":

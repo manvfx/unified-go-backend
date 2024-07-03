@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	// "flag"
+	// "fmt"
 	"unified-go-backend/config"
 	"unified-go-backend/database"
 	_ "unified-go-backend/docs"
@@ -10,6 +12,7 @@ import (
 	"unified-go-backend/utils"
 	"unified-go-backend/worker"
 
+	// "unified-go-backend/seed"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -32,6 +35,9 @@ import (
 // @name Authorization
 
 func main() {
+	// seedFlag := flag.Bool("seed", false, "Seed the database with dummy data")
+	// flag.Parse()
+
 	cfg := config.LoadConfig()
 
 	// Initialize logger with Elasticsearch URL
@@ -44,6 +50,12 @@ func main() {
 	// Connect to Redis
 	database.ConnectRedis(cfg)
 	defer database.DisconnectRedis()
+
+	// if *seedFlag {
+	//     seed.SeedData(cfg)
+	//     fmt.Println("Database seeded with dummy data.")
+	//     return
+	// }
 
 	g, ctx := errgroup.WithContext(context.Background())
 
@@ -61,6 +73,7 @@ func main() {
 	// Setup routes with versioning
 	routes.AuthRoutes(router, cfg)
 	routes.UserRoutes(router, cfg)
+	routes.AccessGroupRoutes(router, cfg)
 
 	// Serve Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
